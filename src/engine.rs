@@ -4,19 +4,22 @@ use crate::text::{self, Word};
 use crate::{audio, candle_model, fermion, mel};
 use anyhow::{Context, Result};
 use candle_core::{DType, Device};
+#[cfg(feature = "cli")]
 use clap::ValueEnum;
 use rayon::prelude::*;
 use std::path::PathBuf;
 use std::time::Instant;
 
-#[derive(Copy, Clone, PartialEq, Eq, ValueEnum, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "cli", derive(ValueEnum))]
 pub enum DeviceArg {
     Auto,
     Cpu,
     Cuda,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, ValueEnum, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "cli", derive(ValueEnum))]
 pub enum Precision {
     F32,
     F16,

@@ -33,6 +33,14 @@ cargo build --release                    # CPU
 cargo build --release --features cuda    # + CUDA (needs the CUDA toolkit; nvcc on PATH)
 ```
 
+### Using it as a library
+
+Everything beyond inference is behind features: `mic` (cpal, ctrlc; `phonon::mic`), `cli` (the `phonon` binary; clap, env_logger) and `dictate` (the `phonon-dictate` binary; evdev). `dictate` implies `cli`, which implies `mic`; the defaults enable `dictate`. For inference only:
+
+```toml
+phonon = { path = "...", default-features = false }
+```
+
 On Linux, the microphone is opened through PulseAudio's protocol, which PipeWire also serves via pipewire-pulse.
 That way `--mic-device` picks the sound server's named sources and never opens raw ALSA hardware the server already
 holds. Plain ALSA is the fallback when no sound server is running. cpal still links ALSA, so the build needs the
