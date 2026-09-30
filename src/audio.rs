@@ -70,7 +70,8 @@ pub fn load(path: &Path) -> Result<Vec<f32>> {
     resample(mono, rate)
 }
 
-fn resample(samples: Vec<f32>, rate: usize) -> Result<Vec<f32>> {
+/// Resample mono audio from `rate` to 16 kHz.
+pub fn resample(samples: Vec<f32>, rate: usize) -> Result<Vec<f32>> {
     if rate == SAMPLE_RATE || samples.is_empty() {
         return Ok(samples);
     }

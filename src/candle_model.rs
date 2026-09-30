@@ -26,6 +26,8 @@ const LN_EPS: f64 = 1e-5;
 pub struct Hyp {
     pub tokens: Vec<u32>,
     pub frames: Vec<usize>,
+    /// softmax probability of each emitted token (over the vocabulary + blank)
+    pub probs: Vec<f32>,
 }
 
 struct Weights {
@@ -513,10 +515,16 @@ impl Phonon {
             let idx: Vec<u32> = rows.iter().map(|&r| (r * tmax + t[r]) as u32).collect();
             let f = flat.index_select(&Tensor::new(idx, dev)?, 0)?;
             let logits = self.dec.joint(&f, &g)?;
-            let tok = logits.narrow(1, 0, VOCAB + 1)?.argmax(1)?;
+            let vocab = logits.narrow(1, 0, VOCAB + 1)?;
+            let tok = vocab.argmax(1)?;
             let dur = logits.narrow(1, VOCAB + 1, DURATIONS.len())?.argmax(1)?;
-            let both = Tensor::cat(&[&tok, &dur], 0)?.to_vec1::<u32>()?;
-            let (toks, durs) = both.split_at(n);
+            // probability of the argmax token: 1 / sum(exp(logit - max))
+            let prob = vocab.broadcast_sub(&vocab.max_keepdim(1)?)?.exp()?.sum(1)?.recip()?;
+            // one host sync per step: ids (< 2^24) travel as f32 next to the probabilities
+            let all = Tensor::cat(&[&tok.to_dtype(DType::F32)?, &dur.to_dtype(DType::F32)?, &prob], 0)?.to_vec1::<f32>()?;
+            let toks: Vec<u32> = all[..n].iter().map(|&x| x as u32).collect();
+            let durs: Vec<u32> = all[n..2 * n].iter().map(|&x| x as u32).collect();
+            let probs = &all[2 * n..];
 
             let mut emit = vec![0u8; n];
             for (j, &r) in rows.iter().enumerate() {
@@ -524,6 +532,7 @@ impl Phonon {
                 if toks[j] as usize != VOCAB {
                     hyps[r].tokens.push(toks[j]);
                     hyps[r].frames.push(t[r]);
+                    hyps[r].probs.push(probs[j]);
                     emit[j] = 1;
                     sym[r] += 1;
                     if d == 0 && sym[r] >= MAX_SYMBOLS {

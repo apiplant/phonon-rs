@@ -1,41 +1,42 @@
 # phonon — Phonon-2 speech-to-text in Rust
 
-A command-line transcriber for [Phonon-2](../README.md) (the five-value quantised Parakeet-TDT-0.6B-v3) with two
-backends, each on CPU or CUDA:
+A command-line transcriber for [Phonon-2](../README.md), the five-value quantised Parakeet-TDT-0.6B-v3. It is a
+native Rust port of the HF `ParakeetForTDT` graph on [candle](https://github.com/huggingface/candle) and runs on
+CPU or CUDA. It reads `model.fermion` directly: the unpacked directory, the file itself, or the
+`phonon-2.bps.tar.zst` release archive. It transcribes files or the microphone.
 
-| backend | what it runs | model input |
-|---|---|---|
-| `candle` (default) | a native Rust port of the HF `ParakeetForTDT` graph on [candle](https://github.com/huggingface/candle), batched greedy TDT decoding | `model.fermion` directly (the unpacked dir, the file, or the `phonon-2.bps.tar.zst` release archive) |
-| `onnx` | ONNX Runtime through [transcribe-rs](https://github.com/cjpais/transcribe-rs)'s Parakeet engine | an ONNX export made by `scripts/export_onnx.py` |
+## Speed vs the Python version
 
-## Results
+Measured on a Ryzen 9 7950X (16 cores) and an RTX 4090. The audio is one hour of LibriSpeech (the 73 utterances of
+`hf-internal-testing/librispeech_asr_dummy`, looped), cut into 30 s chunks and run in batches of 16 by both.
+"PyTorch" is the same HF `ParakeetForTDT` model that `reference_transformers.py` loads, driven the same way
+(torch 2.12, transformers 5.17).
 
-Measured on a Ryzen 9 7950X (16 cores) and an RTX 4090. Speed is one hour of LibriSpeech audio (the 73 utterances of
-`hf-internal-testing/librispeech_asr_dummy`, looped). Accuracy is on those same 73 utterances, compared with
-`reference_transformers.py` (PyTorch fp32).
+| | device | 1 h of audio | speed |
+|---|---|--:|--:|
+| **phonon (candle)** | CUDA f16 | 2.8 s | 1,304x |
+| PyTorch | CUDA f16 | 2.6 s | 1,372x |
+| PyTorch | CUDA f32 | 4.0 s | 896x |
+| **phonon (candle)** | CPU f32, 16 threads | 75 s | 48x |
+| PyTorch | CPU f32, 16 threads | 59 s | 61x |
+| `reference_transformers.py` as shipped | CPU f32, one utterance at a time | ≈ 167 s (481 s of audio in 22.3 s) | 22x |
 
-| backend | device | 1 h of audio | speed | same text as the PyTorch reference | WER |
-|---|---|--:|--:|--:|--:|
-| **candle** | CUDA (f16) | **2.8 s** | **1,304x** | 73/73 | 4.26 % |
-| **candle** | CPU (f32, 16 threads) | **75 s** | **48x** | 73/73 | 4.26 % |
-| onnx (transcribe-rs) | CUDA (f32) | 20.8 s | 173x | 54/73 | 5.83 % |
-| onnx (transcribe-rs) | CPU (f32) | 106 s | 34x | 54/73 | 5.83 % |
-| PyTorch reference | — | — | — | — | 4.26 % |
+Startup is 0.3–0.7 s, against about 30 s for the Python reference to build and load the model.
 
-**Use `candle`.** It is the fastest on both devices and the only one that decodes TDT correctly.
-transcribe-rs's Parakeet decoder ignores the TDT duration head: it treats the model as plain RNN-T and never
-advances past a frame after emitting a token, so it stutters on some words (`Sir Fre Fre Fre … Frederick`) and
-walks every encoder frame one by one.
+On the 73 utterances, candle produces text identical to `reference_transformers.py` (PyTorch fp32) on CPU f32
+(73/73), CUDA f32 (73/73) and CUDA f16 (73/73), for a WER of 4.26 % in each case. bf16 differs on one utterance.
 
 ## Build
 
 ```bash
-cargo build --release                    # CPU: candle + ONNX Runtime
-cargo build --release --features cuda    # + CUDA for both (needs the CUDA toolkit; nvcc on PATH)
-cargo build --release --no-default-features [--features cuda]   # candle only, no ONNX Runtime download
+cargo build --release                    # CPU
+cargo build --release --features cuda    # + CUDA (needs the CUDA toolkit; nvcc on PATH)
 ```
 
-The `onnx` feature downloads a prebuilt ONNX Runtime (CPU or CUDA build) through the `ort` crate.
+On Linux, the microphone is opened through PulseAudio's protocol, which PipeWire also serves via pipewire-pulse.
+That way `--mic-device` picks the sound server's named sources and never opens raw ALSA hardware the server already
+holds. Plain ALSA is the fallback when no sound server is running. cpal still links ALSA, so the build needs the
+ALSA dev files (`alsa-lib` / `libasound2-dev`).
 
 ## Run
 
@@ -47,40 +48,79 @@ mkdir -p ../model_phonon2_c4c_int6 && tar --zstd -xf ../phonon-2.bps.tar.zst -C 
 ./target/release/phonon talk.mp3 --device cpu --format srt > talk.srt
 ./target/release/phonon a.flac b.m4a --format json            # words with start/end times
 ./target/release/phonon hour.flac --bench                     # timings + real-time factor on stderr
+
+./target/release/phonon --mic                                 # live from the default input; Ctrl-C to stop
+./target/release/phonon --list-mics
+./target/release/phonon --mic --mic-device wave --format json # one JSON line per utterance
 ```
+
+Files can be in any format symphonia decodes (wav, flac, mp3, ogg/vorbis, aac/m4a, ...). They are mixed to mono and
+resampled to 16 kHz.
 
 Options that matter:
 
 - `--device auto|cpu|cuda`
 - `--dtype f32|f16|bf16`: encoder precision. Defaults to f32 on CPU and f16 on CUDA. The prediction network and joint always run in f32.
-- `--chunk-secs 30`: long audio is cut at the quietest 20 ms inside the last quarter of each window.
+- `--chunk-secs 30`: long audio is cut at the quietest 20 ms inside the last quarter of each window. In `--mic` mode this is also the longest single utterance.
 - `--batch-size 16`: chunks per encoder batch.
 - `--threads N`: defaults to the physical core count, because SMT siblings slow the GEMMs down.
 - `--model PATH`, or the `PHONON_MODEL` environment variable. Defaults to `../model_phonon2_c4c_int6`, then `../phonon-2.bps.tar.zst`.
 
-Any format symphonia decodes works (wav, flac, mp3, ogg/vorbis, aac/m4a, ...). Input is mixed to mono and
-resampled to 16 kHz.
+### Microphone mode
 
-### ONNX backend
+`--mic` captures the chosen input and splits it into utterances with an energy VAD. The speech threshold is 4x a
+running noise-floor estimate, or `--vad-threshold` if you set one.
+
+- While you speak, the current utterance is re-transcribed about every half second and shown dimmed on stderr. On a slow CPU the refresh backs off.
+- After a pause of `--silence-ms` (700 ms by default), the final text goes to stdout, as plain text, one JSON line per utterance (`--format json`, with word times from the session start) or SRT cues.
+- Ctrl-C flushes the utterance in progress and exits.
+
+## Dictation: `phonon-dictate`
+
+A second binary for push-button dictation on Linux (Wayland or X11). Press a hotkey, speak, and press it again.
+The transcript is typed into whatever window has focus. The model stays loaded, so a sentence comes back in about
+50 ms on a GPU.
 
 ```bash
-pip install torch "transformers>=5.17" onnx huggingface_hub
-python scripts/export_onnx.py ../model_phonon2_c4c_int6/model.fermion ../phonon-2-onnx          # fp32, 2.4 GB
-python scripts/export_onnx.py ../model_phonon2_c4c_int6/model.fermion ../phonon-2-onnx --fp16   # adds encoder-model.fp16.onnx
-./target/release/phonon recording.wav --backend onnx [--dtype f16]
+cargo install --path . --features cuda            # puts phonon and phonon-dictate in ~/.cargo/bin
+phonon-dictate setup                              # press your combo twice; saved to ~/.config/phonon/dictate.json
+phonon-dictate setup --hold                       # same, but push-to-talk (record while held)
+phonon-dictate                                    # run the daemon (keep it running: autostart / systemd user unit)
 ```
 
-The export follows the `istupakov/parakeet-tdt-0.6b-v3-onnx` layout that transcribe-rs expects, and copies its
-weight-free `nemo128.onnx` preprocessor and `vocab.txt`. The joint's 1024→640 encoder projection is moved into
-the encoder graph, so it runs once per frame rather than once per decode step.
+Instead of a saved hotkey, you can:
 
-## How the candle backend works
+- pass one on the command line: `phonon-dictate --key f9`, `--key ctrl+alt+d`, `--key super+space`, `--hold`
+- skip the evdev hotkey and bind `phonon-dictate toggle` in *System Settings → Shortcuts* (KDE) or your compositor's config. `start` / `stop` also exist, and the daemon listens on `$XDG_RUNTIME_DIR/phonon-dictate.sock`. Run the daemon with `--no-hotkey` in that case.
+
+How it works, and what it needs:
+
+- **Hotkeys** are read from `/dev/input/event*` (evdev), so they work under any compositor. Keyboards plugged in later are picked up too. Left and right Ctrl/Shift/Super count as the same key. The hotkey is not grabbed, so the focused app also sees it. Pick a combo that does nothing else (F13–F24, Pause, an unused Super+letter, a mouse side button).
+- **Text** is typed through a virtual keyboard on `/dev/uinput`, using the US layout. Characters it cannot type are pasted: `wl-copy`, then Ctrl+V. `--output paste` always pastes (use it with a non-US layout), `--output clipboard` only copies, and `--output stdout` prints.
+- **Both need the `input` group**: `sudo usermod -aG input $USER`, then log in again.
+- **Recordings without enough speech** (under 0.25 s voiced, measured above 200 Hz), or decoding to one or two low-confidence words, are discarded. Knocks and breaths don't type "Yeah.".
+- **Other options:** `--mic-device`, `--quiet` (no notifications), `--no-space` (no trailing space), `--max-secs 300`.
+
+Example systemd user unit (`~/.config/systemd/user/phonon-dictate.service`):
+
+```ini
+[Unit]
+Description=Phonon dictation
+After=graphical-session.target
+
+[Service]
+ExecStart=%h/.cargo/bin/phonon-dictate --model /path/to/model_phonon2_c4c_int6
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target
+```
+
+## How it works
 
 - `src/fermion.rs` reads the `fermion-five-value-parakeet-v1` container, a port of `fermion_container.py`. It expands five-value rows ({0, ±lo, ±hi} per row) and int6 tables to f32. It can read straight out of the `.tar.zst`.
 - `src/mel.rs` is the HF `ParakeetFeatureExtractor`: preemphasis 0.97, centred 512-point STFT with a 400-sample symmetric Hann window, 128 Slaney mel bands, log, and per-band normalisation.
-- `src/candle_model.rs` holds the 24-layer FastConformer, the 2-layer LSTM prediction network and the TDT joint. Eval BatchNorm is folded into the depthwise conv. Greedy TDT decoding is batched across chunks, with one host sync per step.
+- `src/candle_model.rs` holds the 24-layer FastConformer, the 2-layer LSTM prediction network and the TDT joint. Eval BatchNorm is folded into the depthwise conv. Greedy TDT decoding (token and duration heads) is batched across chunks, with one host sync per step.
 - `src/cpu_ops.rs` has fused, rayon-parallel f32 kernels (rel-pos attention softmax, GLU + depthwise conv + SiLU, head permutes, residual adds, subsampling convs). candle's CPU elementwise and copy ops are single-threaded, and before these kernels they took more time than the matmuls. CUDA uses the composed candle ops.
-
-Checked against `reference_transformers.py` (PyTorch, fp32) on the 73 LibriSpeech utterances of
-`hf-internal-testing/librispeech_asr_dummy`: candle gives identical text on CPU f32 (73/73), CUDA f32 (73/73) and
-CUDA f16 (73/73). bf16 differs on one utterance.
+- `src/mic.rs` does cpal capture (PulseAudio/PipeWire first), a 200 Hz high-passed energy VAD with an onset rule, and utterance segmentation. One- or two-word utterances below `--min-confidence` (0.9) are dropped.
+- `src/bin/phonon-dictate.rs` is the dictation daemon: evdev hotkeys, uinput typing, a control socket and notifications.
