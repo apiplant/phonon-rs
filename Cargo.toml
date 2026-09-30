@@ -1,0 +1,36 @@
+[package]
+name = "phonon"
+description = "Phonon-2 speech-to-text CLI (candle or ONNX Runtime, CPU or CUDA)"
+license = "Apache-2.0"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.104"
+candle-core = "0.11"
+candle-nn = "0.11"
+clap = { version = "4.6.7", features = ["derive", "env"] }
+env_logger = "0.11.11"
+half = "2.7.1"
+log = "0.4.34"
+num_cpus = "1.17.0"
+rayon = "1.12.0"
+realfft = "3.5.0"
+rubato = "5.0.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+symphonia = { version = "0.6.1", features = ["all"] }
+tar = "0.4.46"
+transcribe-rs = { version = "0.3.11", features = ["onnx"], optional = true }
+zstd = "0.14.0"
+
+[features]
+default = ["onnx"]
+# ONNX Runtime backend through transcribe-rs
+onnx = ["dep:transcribe-rs"]
+# CUDA for both backends (candle kernels + cuBLAS; ONNX Runtime CUDA execution provider)
+cuda = ["candle-core/cuda", "candle-nn/cuda", "transcribe-rs?/ort-cuda"]
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
