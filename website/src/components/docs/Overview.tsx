@@ -74,6 +74,12 @@ mkdir -p model_phonon2_c4c_int6 && tar --zstd -xf phonon-2.bps.tar.zst -C model_
             <IC>model_phonon2_c4c_int6</IC> or <IC>phonon-2.bps.tar.zst</IC> in the working directory, its
             parent, or next to the binary
           </LI>
+          <LI>
+            otherwise the archive is downloaded from Hugging Face on first use (164 MB) into{" "}
+            <IC>$XDG_CACHE_HOME/phonon-rs/Phonon-2/</IC> (<IC>~/.cache/phonon-rs/Phonon-2/</IC> by default) and
+            reused afterwards. It is fetched to a <IC>.part</IC> file and renamed when complete, so an interrupted
+            download never leaves an archive that looks done.
+          </LI>
         </UL>
       </Section>
 

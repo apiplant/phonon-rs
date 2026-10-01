@@ -72,7 +72,7 @@ Options that matter:
 - `--chunk-secs 30`: long audio is cut at the quietest 20 ms inside the last quarter of each window. In `--mic` mode this is also the longest single utterance.
 - `--batch-size 16`: chunks per encoder batch.
 - `--threads N`: defaults to the physical core count, because SMT siblings slow the GEMMs down.
-- `--model PATH`, or the `PHONON_MODEL` environment variable. Defaults to `../model_phonon2_c4c_int6`, then `../phonon-2.bps.tar.zst`.
+- `--model PATH`, or the `PHONON_MODEL` environment variable. Defaults to `../model_phonon2_c4c_int6`, then `../phonon-2.bps.tar.zst`, then the archive in `~/.cache/phonon-rs/Phonon-2/` (`$XDG_CACHE_HOME`), downloaded from Hugging Face on first use.
 
 ### Microphone mode
 

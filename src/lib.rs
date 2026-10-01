@@ -4,6 +4,8 @@
 pub mod audio;
 pub mod candle_model;
 mod cpu_ops;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod download;
 pub mod engine;
 pub mod fermion;
 pub mod mel;

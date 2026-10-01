@@ -46,7 +46,8 @@ pub fn init_threads(threads: Option<usize>) -> usize {
     n
 }
 
-/// `$PHONON_MODEL`-less default: the unpacked release next to the working dir or the binary, or the archive.
+/// `$PHONON_MODEL`-less default: the unpacked release next to the working dir or the binary, or the archive;
+/// failing that, the archive in the phonon-rs cache directory, downloaded from Hugging Face first if needed.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn default_model() -> Result<PathBuf> {
     let mut roots = vec![PathBuf::from("."), PathBuf::from("..")];
@@ -55,11 +56,10 @@ pub fn default_model() -> Result<PathBuf> {
         roots.extend(dir.ancestors().take(4).map(|p| p.to_path_buf()));
     }
     let names = ["model_phonon2_c4c_int6", "phonon-2.bps.tar.zst"];
-    roots
-        .iter()
-        .flat_map(|r| names.iter().map(move |n| r.join(n)))
-        .find(|p| p.exists())
-        .context("no model found; pass --model or set PHONON_MODEL")
+    match roots.iter().flat_map(|r| names.iter().map(move |n| r.join(n))).find(|p| p.exists()) {
+        Some(found) => Ok(found),
+        None => crate::download::download().context("no model found; pass --model or set PHONON_MODEL, or allow the download"),
+    }
 }
 
 impl Engine {
