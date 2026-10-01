@@ -1,20 +1,25 @@
 //! Audio loading (any format symphonia decodes), mono mixdown, resampling to 16 kHz, and chunking of long audio.
 
-use anyhow::{Context, Result, bail};
+use anyhow::Result;
 use rubato::audioadapter_buffers::direct::SequentialSliceOfVecs;
 use rubato::{Fft, FixedSync, Resampler};
-use std::fs::File;
-use std::path::Path;
-use symphonia::core::codecs::audio::AudioDecoderOptions;
-use symphonia::core::errors::Error as SymError;
-use symphonia::core::formats::probe::Hint;
-use symphonia::core::formats::{FormatOptions, TrackType};
-use symphonia::core::io::MediaSourceStream;
-use symphonia::core::meta::MetadataOptions;
+#[cfg(not(target_arch = "wasm32"))]
+use {
+    anyhow::{Context, bail},
+    std::fs::File,
+    std::path::Path,
+    symphonia::core::codecs::audio::AudioDecoderOptions,
+    symphonia::core::errors::Error as SymError,
+    symphonia::core::formats::probe::Hint,
+    symphonia::core::formats::{FormatOptions, TrackType},
+    symphonia::core::io::MediaSourceStream,
+    symphonia::core::meta::MetadataOptions,
+};
 
 pub const SAMPLE_RATE: usize = 16_000;
 
 /// Decode `path` to 16 kHz mono f32.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn load(path: &Path) -> Result<Vec<f32>> {
     let file = File::open(path).with_context(|| format!("opening {}", path.display()))?;
     let mss = MediaSourceStream::new(Box::new(file), Default::default());

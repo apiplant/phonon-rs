@@ -1,0 +1,15 @@
+Package: phonon-rs
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: @ARCH@
+Depends: libasound2
+Maintainer: apiplant <releases@apiplant.com>
+Installed-Size: @INSTALLED_SIZE@
+Homepage: https://github.com/apiplant/phonon-rs
+Description: Phonon-2 speech-to-text CLI and dictation daemon (candle)
+ phonon transcribes audio files or the microphone with Phonon-2, the
+ five-value quantised Parakeet-TDT-0.6B-v3, natively on candle. phonon-
+ dictate (Linux only) is a push-to-talk dictation daemon. The model is
+ not bundled: pass --model or set PHONON_MODEL to the unpacked Phonon-2
+ model directory or its .tar.zst.

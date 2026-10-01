@@ -10,3 +10,5 @@ pub mod mel;
 #[cfg(feature = "mic")]
 pub mod mic;
 pub mod text;
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;

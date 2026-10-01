@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>phonon-rs — Phonon-2 speech-to-text in Rust</title>
+    <meta name="description" content="Rust (candle) speech-to-text for Phonon-2, the five-value quantised Parakeet-TDT-0.6B-v3. Transcribe files or the microphone from a CLI, dictate into any app on Linux, or run the whole model in your browser with WebAssembly." />
+    <meta name="keywords" content="phonon, phonon-2, speech to text, ASR, parakeet, Rust, candle, dictation, transcription, WebAssembly, whisper alternative" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://phonon-rs.apiplant.com/" />
+    <meta property="og:site_name" content="phonon-rs" />
+    <meta property="og:title" content="phonon-rs — Phonon-2 speech-to-text in Rust" />
+    <meta property="og:description" content="Rust (candle) speech-to-text for Phonon-2, the five-value quantised Parakeet-TDT-0.6B-v3. Transcribe files or the microphone from a CLI, dictate into any app on Linux, or run the whole model in your browser with WebAssembly." />
+    <meta property="og:url" content="https://phonon-rs.apiplant.com/" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="phonon-rs — Phonon-2 speech-to-text in Rust" />
+    <meta name="twitter:description" content="Rust (candle) speech-to-text for Phonon-2, the five-value quantised Parakeet-TDT-0.6B-v3. Transcribe files or the microphone from a CLI, dictate into any app on Linux, or run the whole model in your browser with WebAssembly." />
+    <meta name="theme-color" content="#171a21" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f2f5fa" media="(prefers-color-scheme: light)" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "phonon-rs",
+        "description": "Rust (candle) speech-to-text for Phonon-2, the five-value quantised Parakeet-TDT-0.6B-v3. Transcribe files or the microphone from a CLI, dictate into any app on Linux, or run the whole model in your browser with WebAssembly.",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Linux, macOS",
+        "url": "https://phonon-rs.apiplant.com/",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2327282f'/%3E%3Cpath d='M7 13v6M12 9v14M17 5v22M22 9v14M27 13v6' stroke='%23a78bfa' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
+    />
+    <script>
+      // Set the theme before first paint so the page never flashes the wrong one.
+      (function () {
+        try {
+          var stored = localStorage.getItem("phonon-rs-theme");
+          var light =
+            stored === "light" ||
+            (!stored && window.matchMedia("(prefers-color-scheme: light)").matches);
+          if (light) document.documentElement.classList.add("light");
+          document.documentElement.style.colorScheme = light ? "light" : "dark";
+        } catch (_) {
+          /* private mode: dark is the default anyway */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>

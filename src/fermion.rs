@@ -13,6 +13,7 @@ use rayon::prelude::*;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Read;
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::Path;
 
 pub const FORMAT: &str = "fermion-five-value-parakeet-v1";
@@ -42,34 +43,39 @@ pub struct ModelFiles {
     pub config: serde_json::Value,
 }
 
+/// Pull `model.fermion` and `config.json` out of a tar stream (the release archive, already decompressed).
+fn read_tar(reader: impl Read) -> Result<ModelFiles> {
+    let mut ar = tar::Archive::new(reader);
+    let (mut container, mut config) = (None, None);
+    for e in ar.entries()? {
+        let mut e = e?;
+        let p = e.path()?.to_string_lossy().into_owned();
+        let mut buf = Vec::with_capacity(e.size() as usize);
+        match p.rsplit('/').next().unwrap_or("") {
+            "model.fermion" => {
+                e.read_to_end(&mut buf)?;
+                container = Some(buf);
+            }
+            "config.json" => {
+                e.read_to_end(&mut buf)?;
+                config = Some(serde_json::from_slice(&buf)?);
+            }
+            _ => {}
+        }
+    }
+    Ok(ModelFiles {
+        container: container.context("archive has no model.fermion")?,
+        config: config.context("archive has no config.json")?,
+    })
+}
+
 /// Load from a directory holding `model.fermion` + `config.json`, a `model.fermion` path, or the release
 /// `phonon-2.bps.tar.zst` archive.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn load_files(path: &Path) -> Result<ModelFiles> {
     let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
     if path.is_file() && (name.ends_with(".tar.zst") || name.ends_with(".tzst")) {
-        let dec = zstd::stream::Decoder::new(std::fs::File::open(path)?)?;
-        let mut ar = tar::Archive::new(dec);
-        let (mut container, mut config) = (None, None);
-        for e in ar.entries()? {
-            let mut e = e?;
-            let p = e.path()?.to_string_lossy().into_owned();
-            let mut buf = Vec::with_capacity(e.size() as usize);
-            match p.rsplit('/').next().unwrap_or("") {
-                "model.fermion" => {
-                    e.read_to_end(&mut buf)?;
-                    container = Some(buf);
-                }
-                "config.json" => {
-                    e.read_to_end(&mut buf)?;
-                    config = Some(serde_json::from_slice(&buf)?);
-                }
-                _ => {}
-            }
-        }
-        return Ok(ModelFiles {
-            container: container.context("archive has no model.fermion")?,
-            config: config.context("archive has no config.json")?,
-        });
+        return read_tar(zstd::stream::Decoder::new(std::fs::File::open(path)?)?);
     }
     let (container_path, dir) = if path.is_dir() {
         (path.join("model.fermion"), path.to_path_buf())
@@ -81,6 +87,18 @@ pub fn load_files(path: &Path) -> Result<ModelFiles> {
     let cfg_path = dir.join("config.json");
     let config = serde_json::from_slice(&std::fs::read(&cfg_path).with_context(|| format!("reading {}", cfg_path.display()))?)?;
     Ok(ModelFiles { container, config })
+}
+
+/// Load from the in-memory bytes of the release `phonon-2.bps.tar.zst` archive (the browser has no filesystem).
+#[cfg(target_arch = "wasm32")]
+pub fn load_archive(archive: &[u8]) -> Result<ModelFiles> {
+    let dec = ruzstd::decoding::StreamingDecoder::new(archive).map_err(|e| anyhow::anyhow!("zstd: {e}"))?;
+    read_tar(dec)
+}
+
+/// Load from an unpacked `model.fermion` and its `config.json`, both already in memory.
+pub fn from_parts(container: Vec<u8>, config_json: &[u8]) -> Result<ModelFiles> {
+    Ok(ModelFiles { container, config: serde_json::from_slice(config_json)? })
 }
 
 /// Expand every record to f32, keyed by its HF Transformers (ParakeetForTDT) name.

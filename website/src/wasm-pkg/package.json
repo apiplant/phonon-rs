@@ -1,0 +1,17 @@
+{
+  "name": "phonon",
+  "type": "module",
+  "description": "Phonon-2 speech-to-text CLI (candle, CPU or CUDA)",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "files": [
+    "phonon_bg.wasm",
+    "phonon.js",
+    "phonon.d.ts"
+  ],
+  "main": "phonon.js",
+  "types": "phonon.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

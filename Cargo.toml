@@ -5,6 +5,10 @@ license = "Apache-2.0"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "phonon"
+crate-type = ["rlib", "cdylib"]
+
 [dependencies]
 anyhow = "1.0.104"
 candle-core = "0.11"
@@ -22,9 +26,21 @@ realfft = "3.5.0"
 rubato = "5.0.0"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
-symphonia = { version = "0.6.1", features = ["all"] }
 tar = "0.4.46"
+
+# symphonia, zstd and the host's thread/clock APIs have no wasm32-unknown-unknown story: the browser decodes audio
+# itself (Web Audio) and the zstd archive is unpacked by a pure-Rust decoder.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+symphonia = { version = "0.6.1", features = ["all"] }
 zstd = "0.14.0"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+console_error_panic_hook = "0.1"
+ruzstd = "0.8"
+getrandom = { version = "0.2", features = ["js"] }
+getrandom3 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 
 # talk to PipeWire / PulseAudio instead of opening ALSA hardware that the sound server already holds
 [target.'cfg(target_os = "linux")'.dependencies]

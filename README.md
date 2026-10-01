@@ -132,3 +132,19 @@ WantedBy=graphical-session.target
 - `src/cpu_ops.rs` has fused, rayon-parallel f32 kernels (rel-pos attention softmax, GLU + depthwise conv + SiLU, head permutes, residual adds, subsampling convs). candle's CPU elementwise and copy ops are single-threaded, and before these kernels they took more time than the matmuls. CUDA uses the composed candle ops.
 - `src/mic.rs` does cpal capture (PulseAudio/PipeWire first), a 200 Hz high-passed energy VAD with an onset rule, and utterance segmentation. One- or two-word utterances below `--min-confidence` (0.9) are dropped.
 - `src/bin/phonon-dictate.rs` is the dictation daemon: evdev hotkeys, uinput typing, a control socket and notifications.
+
+## Install
+
+Prebuilt packages (phonon, phonon-dictate) for macOS (Apple Silicon), Linux x86_64 and Linux arm64:
+
+```bash
+brew tap apiplant/tap && brew install apiplant/tap/phonon-rs      # macOS, Linux
+sudo apt install phonon-rs      # Debian/Ubuntu, after adding apt.apiplant.com
+sudo pacman -S phonon-rs        # Arch, after adding apiplant.github.io/pacman
+```
+
+CUDA builds (Linux x86_64, NVIDIA GPU) are separate packages: `phonon-rs-cuda` (`brew install apiplant/tap/phonon-rs-cuda`, `sudo apt install phonon-rs-cuda`, `sudo pacman -S phonon-rs-cuda`). They conflict with `phonon-rs`.
+
+Setup commands for the apt and pacman repositories, the plain archives and the release process are in [`packaging/README.md`](packaging/README.md). Release archives are on the [releases page](https://github.com/apiplant/phonon-rs/releases).
+
+Website and in-browser demo: <https://phonon-rs.apiplant.com>.

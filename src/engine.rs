@@ -7,7 +7,9 @@ use candle_core::{DType, Device};
 #[cfg(feature = "cli")]
 use clap::ValueEnum;
 use rayon::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -35,6 +37,7 @@ pub struct Engine {
 }
 
 /// One rayon worker per physical core: SMT siblings slow the f32 GEMMs down rather than up.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn init_threads(threads: Option<usize>) -> usize {
     let n = threads.unwrap_or_else(num_cpus::get_physical);
     rayon::ThreadPoolBuilder::new().num_threads(n).build_global().ok();
@@ -44,6 +47,7 @@ pub fn init_threads(threads: Option<usize>) -> usize {
 }
 
 /// `$PHONON_MODEL`-less default: the unpacked release next to the working dir or the binary, or the archive.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn default_model() -> Result<PathBuf> {
     let mut roots = vec![PathBuf::from("."), PathBuf::from("..")];
     if let Some(dir) = std::env::current_exe().ok().and_then(|p| p.parent().map(|p| p.to_path_buf())) {
@@ -59,6 +63,7 @@ pub fn default_model() -> Result<PathBuf> {
 }
 
 impl Engine {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn load(model: Option<PathBuf>, device: DeviceArg, dtype: Option<Precision>) -> Result<Self> {
         let cuda = match device {
             DeviceArg::Cpu => false,
@@ -66,17 +71,22 @@ impl Engine {
             DeviceArg::Auto => candle_core::utils::cuda_is_available(),
         };
         let precision = dtype.unwrap_or(if cuda { Precision::F16 } else { Precision::F32 });
+        let path = match model {
+            Some(p) => p,
+            None => default_model()?,
+        };
+        Self::from_files(fermion::load_files(&path)?, cuda, precision)
+    }
+
+    /// Build the engine from model files already in memory: what the browser build uses, and what `load`
+    /// finishes with.
+    pub fn from_files(files: fermion::ModelFiles, cuda: bool, precision: Precision) -> Result<Self> {
         let dev = if cuda { Device::new_cuda(0).context("CUDA device (build with --features cuda)")? } else { Device::Cpu };
         let dt = match precision {
             Precision::F32 => DType::F32,
             Precision::F16 => DType::F16,
             Precision::Bf16 => DType::BF16,
         };
-        let path = match model {
-            Some(p) => p,
-            None => default_model()?,
-        };
-        let files = fermion::load_files(&path)?;
         Ok(Self {
             vocab: text::Vocab::from_config(&files.config)?,
             model: candle_model::Phonon::load(&files, &dev, dt)?,
@@ -95,11 +105,14 @@ impl Engine {
         let mut out = vec![Vec::new(); chunks.len()];
         for batch in order.chunks(batch_size.max(1)) {
             let fs: Vec<&mel::Features> = batch.iter().map(|&i| &feats[i]).collect();
+            #[cfg(not(target_arch = "wasm32"))]
             let t = Instant::now();
             let (enc, lens) = self.model.encode(&fs)?;
             enc.device().synchronize()?;
+            #[cfg(not(target_arch = "wasm32"))]
             let te = t.elapsed();
             let hyps = self.model.greedy(&enc, &lens)?;
+            #[cfg(not(target_arch = "wasm32"))]
             log::debug!("batch of {}: encoder {te:.2?}, decoder {:.2?}", fs.len(), t.elapsed() - te);
             for (&i, h) in batch.iter().zip(hyps) {
                 let offset = chunks[i].offset as f32 / audio::SAMPLE_RATE as f32;
