@@ -21,8 +21,8 @@ export const SITE = {
   lead: "Transcribe files or the microphone, dictate into any window on Linux, or run the whole model in a browser tab. A 164 MB quantised Parakeet that matches its 2.5 GB teacher. No Python, no server.",
   heroNote: "Runs Phonon-2 from FermionResearch: the five-value quantised Parakeet-TDT-0.6B-v3.",
   demo: { href: "/demo", label: "▶ Transcribe in your browser" },
-  cargo: `cargo install --git https://github.com/apiplant/phonon-rs
-cargo install --git https://github.com/apiplant/phonon-rs --features cuda   # with CUDA support`,
+  cargo: `cargo install phonon-rs
+cargo install phonon-rs --features cuda   # with CUDA support`,
   terminal: {
     title: "phonon",
     command: "phonon talk.wav --format json",
@@ -100,12 +100,13 @@ cargo install --git https://github.com/apiplant/phonon-rs --features cuda   # wi
   ] as Feature[],
   lib: {
     lead: "The inference engine is a library: load the model, hand it 16 kHz mono samples, get timed words back. Everything beyond inference (microphone, CLI, dictation) sits behind features.",
-    add: `cargo add phonon --git https://github.com/apiplant/phonon-rs --no-default-features`,
+    add: `cargo add phonon-rs --no-default-features`,
     caption: "src/main.rs",
     snippet: `use phonon::engine::{DeviceArg, Engine};
 use phonon::{audio, text};
 
-let engine = Engine::load(Some("model_phonon2_c4c_int6".into()), DeviceArg::Auto, None)?;
+// None: downloads Phonon-2 into ~/.cache/phonon-rs on first use
+let engine = Engine::load(None, DeviceArg::Auto, None)?;
 let samples = audio::load("talk.wav".as_ref())?;     // 16 kHz mono f32
 let words = engine.transcribe(&samples, 30.0)?;      // 30 s chunks, cut at pauses
 println!("{}", text::join(&words));

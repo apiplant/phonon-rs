@@ -1,6 +1,11 @@
 [package]
-name = "phonon"
+name = "phonon-rs"
 description = "Phonon-2 speech-to-text CLI (candle, CPU or CUDA)"
+repository = "https://github.com/apiplant/phonon-rs"
+readme = "README.md"
+keywords = ["speech-to-text","asr","phonon","parakeet","candle"]
+categories = ["multimedia::audio","science","command-line-utilities"]
+exclude = ["/website/","/packaging/","/.github/"]
 license = "Apache-2.0"
 version = "0.1.1"
 edition = "2024"

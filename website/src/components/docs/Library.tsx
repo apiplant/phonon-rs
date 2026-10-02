@@ -7,7 +7,7 @@ export function DocsLibrary() {
     <DocsLayout>
       <H1>As a library</H1>
       <Lead>
-        The <IC>phonon</IC> crate is the engine behind both binaries: model loading, the mel front end,
+        The <IC>phonon-rs</IC> crate (library name <IC>phonon</IC>) is the engine behind both binaries: model loading, the mel front end,
         batched greedy TDT decoding, and word timestamps.
       </Lead>
 
@@ -19,8 +19,8 @@ export function DocsLibrary() {
           Linux only). <IC>dictate</IC> implies <IC>cli</IC>, which implies <IC>mic</IC>; the defaults enable{" "}
           <IC>dictate</IC>. For inference only:
         </P>
-        <CopyBlock command={`cargo add phonon --git https://github.com/apiplant/phonon-rs --no-default-features
-cargo add phonon --git https://github.com/apiplant/phonon-rs --no-default-features --features cuda`} />
+        <CopyBlock command={`cargo add phonon-rs --no-default-features
+cargo add phonon-rs --no-default-features --features cuda   # CUDA is opt-in and passed down to candle`} />
       </Section>
 
       <Section>

@@ -133,6 +133,33 @@ WantedBy=graphical-session.target
 - `src/mic.rs` does cpal capture (PulseAudio/PipeWire first), a 200 Hz high-passed energy VAD with an onset rule, and utterance segmentation. One- or two-word utterances below `--min-confidence` (0.9) are dropped.
 - `src/bin/phonon-dictate.rs` is the dictation daemon: evdev hotkeys, uinput typing, a control socket and notifications.
 
+## Use as a library
+
+The crate is published as `phonon-rs`; the library is `phonon`.
+
+```toml
+[dependencies]
+phonon-rs = { version = "0.1", default-features = false }                          # CPU, inference only
+# phonon-rs = { version = "0.1", default-features = false, features = ["cuda"] }   # + CUDA (opt-in)
+```
+
+Always set `default-features = false` for library use: the defaults enable the `phonon` and
+`phonon-dictate` binaries (clap, cpal, evdev). CUDA is never on by default; the `cuda` feature is passed
+down to candle and needs the CUDA toolkit to build. `mic` adds `phonon::mic` (cpal) if you want
+microphone capture.
+
+```rust
+use phonon::engine::{DeviceArg, Engine};
+use phonon::{audio, text};
+
+// `None` finds the model next to the binary or in ~/.cache/phonon-rs (downloaded on first use, 164 MB);
+// or pass `Some(path)` to a model directory, model.fermion or phonon-2.bps.tar.zst.
+let engine = Engine::load(None, DeviceArg::Auto, None)?;
+let samples = audio::load("talk.wav".as_ref())?;      // any symphonia format -> 16 kHz mono f32
+let words = engine.transcribe(&samples, 30.0)?;       // chunks of up to 30 s, cut at pauses
+println!("{}", text::join(&words));
+```
+
 ## Install
 
 Prebuilt packages (phonon, phonon-dictate) for macOS (Apple Silicon), Linux x86_64 and Linux arm64:
