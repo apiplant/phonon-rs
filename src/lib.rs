@@ -3,6 +3,8 @@
 
 pub mod audio;
 pub mod candle_model;
+#[cfg(feature = "dictate")]
+pub mod dictate;
 mod cpu_ops;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod download;

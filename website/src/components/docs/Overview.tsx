@@ -18,7 +18,7 @@ export function DocsOverview() {
         >
           Phonon-2
         </a>
-        , the five-value quantised Parakeet-TDT-0.6B-v3. It ships as a library crate, a transcriber, a Linux
+        , the five-value quantised Parakeet-TDT-0.6B-v3. It ships as a library crate, a transcriber, a Linux and macOS
         dictation daemon, and a WebAssembly build that powers the{" "}
         <a href="/demo" class="text-accent hover:text-accent-dim">
           in-browser demo
@@ -55,7 +55,7 @@ mkdir -p model_phonon2_c4c_int6 && tar --zstd -xf phonon-2.bps.tar.zst -C model_
             <a href="/docs/dictate" class="text-accent hover:text-accent-dim">
               <IC>phonon-dictate</IC>
             </a>{" "}
-            is a push-to-talk dictation daemon for Linux.
+            is a push-to-talk dictation daemon for Linux and macOS.
           </LI>
         </UL>
       </Section>

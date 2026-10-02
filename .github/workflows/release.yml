@@ -46,8 +46,8 @@ jobs:
             bins: "phonon phonon-dictate"
           - target: aarch64-apple-darwin
             os: macos-14
-            args: "--no-default-features --features cli --bins"
-            bins: "phonon"
+            args: "--bins"
+            bins: "phonon phonon-dictate"
     steps:
       - uses: actions/checkout@v4
 
@@ -440,7 +440,7 @@ jobs:
             | Linux x86_64 | `phonon-rs-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz` |
             | Linux aarch64 | `phonon-rs-${{ github.ref_name }}-aarch64-unknown-linux-gnu.tar.gz` |
 
-            Each archive holds `phonon`, `phonon-dictate` (macOS: `phonon`).
+            Each archive holds `phonon`, `phonon-dictate` (macOS: `phonon`, `phonon-dictate`).
 
             ## CUDA build
 

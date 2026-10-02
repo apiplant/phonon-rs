@@ -20,7 +20,7 @@ class PhononRsCuda < Formula
 
   def install
     bin.install "phonon"
-    bin.install "phonon-dictate" if OS.linux?
+    bin.install "phonon-dictate"
     doc.install "README.md"
   end
 

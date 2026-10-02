@@ -16,7 +16,7 @@ export function DocsLibrary() {
         <P>
           Everything beyond inference is behind features: <IC>mic</IC> (cpal; <IC>phonon::mic</IC>),{" "}
           <IC>cli</IC> (the <IC>phonon</IC> binary) and <IC>dictate</IC> (the <IC>phonon-dictate</IC> binary,
-          Linux only). <IC>dictate</IC> implies <IC>cli</IC>, which implies <IC>mic</IC>; the defaults enable{" "}
+          Linux and macOS). <IC>dictate</IC> implies <IC>cli</IC>, which implies <IC>mic</IC>; the defaults enable{" "}
           <IC>dictate</IC>. For inference only:
         </P>
         <CopyBlock command={`cargo add phonon-rs --no-default-features

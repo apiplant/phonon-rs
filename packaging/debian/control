@@ -10,6 +10,6 @@ Homepage: https://github.com/apiplant/phonon-rs
 Description: Phonon-2 speech-to-text CLI and dictation daemon (candle)
  phonon transcribes audio files or the microphone with Phonon-2, the
  five-value quantised Parakeet-TDT-0.6B-v3, natively on candle. phonon-
- dictate (Linux only) is a push-to-talk dictation daemon. The model (164
- MB) is downloaded from Hugging Face on first use into ~/.cache/phonon-
- rs, or taken from --model.
+ dictate is a push-to-talk dictation daemon (Linux and macOS). The model
+ (164 MB) is downloaded from Hugging Face on first use into
+ ~/.cache/phonon-rs, or taken from --model.

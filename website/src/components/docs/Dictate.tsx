@@ -7,14 +7,10 @@ export function DocsDictate() {
     <DocsLayout>
       <H1>phonon-dictate</H1>
       <Lead>
-        Push-button dictation for Linux (Wayland or X11). Press a hotkey, speak, press it again, and the
+        Push-button dictation for Linux (Wayland or X11) and macOS. Press a hotkey, speak, press it again, and the
         transcript is typed into whatever window has focus. The model stays loaded, so a sentence comes back
         in about 50 ms on a GPU.
       </Lead>
-      <P>
-        macOS packages contain only <IC>phonon</IC>: the daemon reads hotkeys from evdev and types through
-        uinput, which are Linux interfaces.
-      </P>
 
       <Section>
         <H2>Setup</H2>
@@ -39,7 +35,48 @@ phonon-dictate                # run the daemon (keep it running: autostart / sys
       </Section>
 
       <Section>
-        <H2>How it works</H2>
+        <H2>macOS</H2>
+        <P>
+          The hotkey comes from a Quartz event tap and the text is typed with posted key events, so macOS asks for two
+          privacy permissions, granted to the app that runs <IC>phonon-dictate</IC> (Terminal, iTerm, ...) in System
+          Settings, Privacy &amp; Security:
+        </P>
+        <UL>
+          <LI>
+            <strong class="font-medium text-ink">Input Monitoring</strong>, to see the hotkey. Without it the daemon
+            says it cannot watch the keyboard; <IC>--no-hotkey</IC> with <IC>phonon-dictate toggle</IC> bound in a
+            shortcut tool still works.
+          </LI>
+          <LI>
+            <strong class="font-medium text-ink">Accessibility</strong>, to type into other windows. Without it the
+            keystrokes are dropped; <IC>--output clipboard</IC> works without it.
+          </LI>
+        </UL>
+        <P>
+          Key names are the same as on Linux: <IC>cmd</IC> or <IC>super</IC> is Command, <IC>alt</IC> or{" "}
+          <IC>option</IC> is Option, and <IC>KEY_FN</IC> is the Fn / globe key (set it to "Do nothing" in Keyboard
+          settings, or it will also open the emoji picker). Text is typed as Unicode, so any character works whatever
+          the keyboard layout; <IC>--paste-keys</IC> defaults to <IC>cmd+v</IC>. Notifications go through Notification
+          Center.
+        </P>
+        <Pre caption="~/Library/LaunchAgents/com.apiplant.phonon-dictate.plist" lang="text">{`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.apiplant.phonon-dictate</string>
+  <key>ProgramArguments</key><array><string>/opt/homebrew/bin/phonon-dictate</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+</dict>
+</plist>`}</Pre>
+        <P>
+          A launch agent runs without Terminal, so the permissions have to be granted to the{" "}
+          <IC>phonon-dictate</IC> binary itself (add it with the + button in both lists).
+        </P>
+      </Section>
+
+      <Section>
+        <H2>How it works (Linux)</H2>
         <UL>
           <LI>
             <strong class="font-medium text-ink">Hotkeys</strong> are read from <IC>/dev/input/event*</IC>{" "}

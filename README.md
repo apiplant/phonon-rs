@@ -85,7 +85,7 @@ running noise-floor estimate, or `--vad-threshold` if you set one.
 
 ## Dictation: `phonon-dictate`
 
-A second binary for push-button dictation on Linux (Wayland or X11). Press a hotkey, speak, and press it again.
+A second binary for push-button dictation on Linux (Wayland or X11) and macOS. Press a hotkey, speak, and press it again.
 The transcript is typed into whatever window has focus. The model stays loaded, so a sentence comes back in about
 50 ms on a GPU.
 
@@ -101,7 +101,9 @@ Instead of a saved hotkey, you can:
 - pass one on the command line: `phonon-dictate --key f9`, `--key ctrl+alt+d`, `--key super+space`, `--hold`
 - skip the evdev hotkey and bind `phonon-dictate toggle` in *System Settings → Shortcuts* (KDE) or your compositor's config. `start` / `stop` also exist, and the daemon listens on `$XDG_RUNTIME_DIR/phonon-dictate.sock`. Run the daemon with `--no-hotkey` in that case.
 
-How it works, and what it needs:
+On macOS the hotkey comes from a Quartz event tap and the text is typed with posted key events (any character, whatever the layout), so macOS asks for **Input Monitoring** (to see the hotkey) and **Accessibility** (to type) for the app that runs it, in System Settings > Privacy & Security. `cmd` means Command, `alt` Option, `KEY_FN` the Fn/globe key; `--paste-keys` defaults to `cmd+v`; notifications use Notification Center.
+
+How it works on Linux, and what it needs:
 
 - **Hotkeys** are read from `/dev/input/event*` (evdev), so they work under any compositor. Keyboards plugged in later are picked up too. Left and right Ctrl/Shift/Super count as the same key. The hotkey is not grabbed, so the focused app also sees it. Pick a combo that does nothing else (F13–F24, Pause, an unused Super+letter, a mouse side button).
 - **Text** is typed through a virtual keyboard on `/dev/uinput`, using the US layout. Characters it cannot type are pasted: `wl-copy`, then Ctrl+V. `--output paste` always pastes (use it with a non-US layout), `--output clipboard` only copies, and `--output stdout` prints.
