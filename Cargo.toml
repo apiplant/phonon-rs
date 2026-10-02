@@ -7,7 +7,7 @@ keywords = ["speech-to-text","asr","phonon","parakeet","candle"]
 categories = ["multimedia::audio","science","command-line-utilities"]
 exclude = ["/website/","/packaging/","/.github/"]
 license = "Apache-2.0"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 
 [lib]
